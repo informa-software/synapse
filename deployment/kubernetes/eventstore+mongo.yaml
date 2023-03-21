@@ -127,8 +127,8 @@ spec:
       serviceAccountName: synapse
       containers:
         - name: synapse
-          image: ghcr.io/serverlessworkflow/synapse:latest
-          imagePullPolicy: IfNotPresent
+          image: informaacr.azurecr.io/synapse/server:latest
+          imagePullPolicy: Always
           env:
             - name: KUBERNETES_POD_NAME
               valueFrom:
@@ -138,6 +138,18 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Development
+            - name: SYNAPSE_SKIP_CERTIFICATE_VALIDATION
+              value: "true"
+            - name: SYNAPSE_PERSISTENCE_WRITEMODEL_DEFAULT_REPOSITORY
+              value: EventStore
+            - name: SYNAPSE_PERSISTENCE_READMODEL_DEFAULT_REPOSITORY
+              value: MongoDB
+            - name: CONNECTIONSTRINGS__EVENTSTORE
+              value: "esdb://event-store:2113?tls=false"
+            - name: CONNECTIONSTRINGS__MONGODB
+              value: mongodb://mongo:27017
 
 ---
 
@@ -149,6 +161,7 @@ metadata:
   labels: 
     app: synapse
 spec:
+  type: LoadBalancer
   ports:
     - name: http
       port: 42286

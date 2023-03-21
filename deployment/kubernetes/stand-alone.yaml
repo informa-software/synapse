@@ -35,7 +35,7 @@ spec:
       serviceAccountName: synapse
       containers:
       - name: synapse
-        image: ghcr.io/serverlessworkflow/synapse:latest
+        image: informaacr.azurecr.io/synapse/server:1.0
         imagePullPolicy: IfNotPresent
         env:
           - name: KUBERNETES_POD_NAME
