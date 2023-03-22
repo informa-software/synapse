@@ -29,7 +29,7 @@ namespace Synapse.Runtime.Docker.Configuration
         /// <summary>
         /// Gets the default Docker Runtime container image
         /// </summary>
-        public const string DefaultContainerImage = "ghcr.io/serverlessworkflow/synapse-worker";
+        public const string DefaultContainerImage = "informaacr.azurecr.io/synapse/worker";
 
         private static readonly Config _DefaultContainerConfiguration = new()
         {

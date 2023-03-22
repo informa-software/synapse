@@ -94,7 +94,7 @@ Docker is the recommended way to run the Synapse Server for those who do not wan
 To run the server on Docker, simply execute the following command in your system's shell:
 
 ```shell
-docker run --name synapse -v /var/run/docker.sock:/var/run/docker.sock -p 42286:42286 -p 41387:41387 ghcr.io/serverlessworkflow/synapse:latest
+docker run --name synapse -v /var/run/docker.sock:/var/run/docker.sock -p 42286:42286 -p 41387:41387 informaacr.azurecr.io/synapse/server:latest
 ```
 
 *Notes: you need to mount the `docker.sock` and/or run the container with the `--network host` option for Synapse to be able to spawn its own containers*

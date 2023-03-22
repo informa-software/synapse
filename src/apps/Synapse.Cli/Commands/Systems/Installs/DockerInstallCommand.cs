@@ -69,7 +69,7 @@ namespace Synapse.Cli.Commands.Systems.Installs
             environmentVariables.Add(@$"-e ""{EnvironmentVariables.CloudEvents.Sink.Uri.Name} = {ceSink}""");
             if(skipCertificateValidation)
                 environmentVariables.Add(@$"-e ""{EnvironmentVariables.SkipCertificateValidation.Name} = {skipCertificateValidation}""");
-            var args = @$"run --name {name} -v /var/run/docker.sock:/var/run/docker.sock --add-host=host.docker.internal:host-gateway -p 42286:42286 -p 41387:41387 -d --restart unless-stopped {string.Join(" ", environmentVariables)} ghcr.io/serverlessworkflow/synapse:latest";
+            var args = @$"run --name {name} -v /var/run/docker.sock:/var/run/docker.sock --add-host=host.docker.internal:host-gateway -p 42286:42286 -p 41387:41387 -d --restart unless-stopped {string.Join(" ", environmentVariables)} informaacr.azurecr.io/synapse/server:latest";
             var process = Process.Start("docker", args);
             await process.WaitForExitAsync();
             await Task.Delay(500); //wait for the server to run
