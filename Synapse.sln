@@ -101,7 +101,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "kubernetes", "kubernetes", 
 	ProjectSection(SolutionItems) = preProject
 		deployment\kubernetes\eventstore+mongo.yaml = deployment\kubernetes\eventstore+mongo.yaml
 		deployment\kubernetes\stand-alone.yaml = deployment\kubernetes\stand-alone.yaml
-		deployment\kubernetes\mongo-replicaset.yaml = deployment\kubernetes\mongo-replicaset.yaml
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{40114B2A-998C-471F-93F0-9834DE4F6BD2}"
