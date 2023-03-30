@@ -10,7 +10,38 @@ kind: ServiceAccount
 metadata:
   name: synapse
   namespace: synapse
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-manager
+  namespace: synapse
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: synapse
+  namespace: synapse
+subjects:
+  - kind: ServiceAccount
+    name: synapse
+    apiGroup: ""
+roleRef:
+  kind: Role
+  name: pod-manager
+  apiGroup: rbac.authorization.k8s.io
+
 ---
 
 kind: StorageClass
@@ -18,6 +49,7 @@ apiVersion: storage.k8s.io/v1
 metadata:
   name: sc-azurefile
 provisioner: file.csi.azure.com # replace with "kubernetes.io/azure-file" if aks version is less than 1.21
+reclaimPolicy: Retain
 allowVolumeExpansion: true
 mountOptions:
   - dir_mode=0777
@@ -89,10 +121,11 @@ spec:
   clusterIP: None
   selector:
     app: mongo
-    
+
 ---
+
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: event-store
   namespace: synapse
@@ -100,31 +133,57 @@ spec:
   selector:
     matchLabels:
       app: event-store
+  serviceName: event-store
+  replicas: 3
   template:
     metadata:
       labels:
         app: event-store
     spec:
+      terminationGracePeriodSeconds: 10
       containers:
-      - name: event-store
-        image: eventstore/eventstore:latest
-        env:
-          - name: EVENTSTORE_CLUSTER_SIZE
-            value: '1'
-          - name: EVENTSTORE_RUN_PROJECTIONS
-            value: All
-          - name: EVENTSTORE_START_STANDARD_PROJECTIONS
-            value: 'true'
-          - name: EVENTSTORE_EXT_TCP_PORT
-            value: '1113'
-          - name: EVENTSTORE_HTTP_PORT
-            value: '2113'
-          - name: EVENTSTORE_INSECURE
-            value: 'true'
-          - name: EVENTSTORE_ENABLE_EXTERNAL_TCP
-            value: 'true'
-          - name: EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP
-            value: 'true'
+        - name: event-store
+          image: eventstore/eventstore:latest
+          env:
+            - name: EVENTSTORE_CLUSTER_SIZE
+              value: '3'
+            - name: EVENTSTORE_DISCOVER_VIA_DNS
+              value: 'true'
+            - name: EVENTSTORE_CLUSTER_DNS
+              value: 'event-store'
+            - name: EVENTSTORE_RUN_PROJECTIONS
+              value: All
+            - name: EVENTSTORE_START_STANDARD_PROJECTIONS
+              value: 'true'
+            - name: EVENTSTORE_EXT_TCP_PORT
+              value: '1113'
+            - name: EVENTSTORE_HTTP_PORT
+              value: '2113'
+            - name: EVENTSTORE_INSECURE
+              value: 'true'
+            - name: EVENTSTORE_ENABLE_EXTERNAL_TCP
+              value: 'true'
+            - name: EVENTSTORE_ENABLE_ATOM_PUB_OVER_HTTP
+              value: 'true'
+          ports: 
+            - name: eventstore-web
+              containerPort: 2113
+            - name: eventstore-tcp
+              containerPort: 1113
+          volumeMounts:
+            - name: vol-azurefile-eventstore
+              mountPath: /var/lib/eventstore
+  volumeClaimTemplates:
+    - metadata:
+        name: vol-azurefile-eventstore
+      spec:
+        storageClassName: sc-azurefile
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+
 ---
 
 apiVersion: v1
@@ -135,16 +194,17 @@ metadata:
   labels: 
     app: event-store
 spec:
+  clusterIP: None
   ports:
+    - name: web
+      port: 2113
+      protocol: TCP
     - name: tcp
       port: 1113
       protocol: TCP
-    - name: http
-      port: 2113
-      protocol: TCP
   selector:
     app: event-store
-    
+
 ---
 
 apiVersion: apps/v1
@@ -213,34 +273,3 @@ spec:
       protocol: TCP 
   selector:
     app: synapse
-    
----
-
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: pod-manager
-  namespace: synapse
-  labels:
-    rbac.authorization.k8s.io/aggregate-to-admin: "true"
-    rbac.authorization.k8s.io/aggregate-to-edit: "true"
-rules:
-- apiGroups: [""]
-  resources: ["pods", "pods/log"]
-  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-  
----
-
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: synapse
-  namespace: synapse
-subjects:
-  - kind: ServiceAccount
-    name: synapse
-    apiGroup: ""
-roleRef:
-  kind: Role
-  name: pod-manager
-  apiGroup: rbac.authorization.k8s.io
